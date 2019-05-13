@@ -2,13 +2,13 @@ pragma solidity ^0.5.6;
 
 import "ds-test/test.sol";
 
-import "./ESModule.sol";
+import "./ESM.sol";
 
-contract ESModuleTest is DSTest {
-    ESModule module;
+contract ESMTest is DSTest {
+    ESM esm;
 
     function setUp() public {
-        module = new ESModule();
+        esm = new ESM();
     }
 
     function testFail_basic_sanity() public {

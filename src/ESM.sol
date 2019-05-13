@@ -12,20 +12,19 @@ contract EndLike {
     function cage() public;
 }
 
-contract ESModule is DSAuth, DSNote {
+contract ESM is DSAuth, DSNote {
     uint256 public threshold;
     mapping(address => uint256) public gems;
     GemLike public gem;
-    bool freed;
-    // TODO: should allow firing more than once?
-    bool fired;
-    bool burnt;
     EndLike end;
+    bool fired;
+    bool freed;
+    bool burnt;
 
     constructor(address gem_, address end_, address owner_, address authority_) public {
         gem = GemLike(gem_);
         end = EndLike(end_);
-        owner = owner;
+        owner = owner_;
         authority = DSAuthority(authority_);
     }
 
@@ -39,6 +38,15 @@ contract ESModule is DSAuth, DSNote {
         require(z <= x);
     }
 
+    // -- admin --
+    function setThreshold(uint256 threshold_) external auth note {
+        threshold = threshold_;
+    }
+
+    function aim(address end_) external auth note {
+        end = end_;
+    }
+
     function fire() public note {
         require(!fired);
         require(gem.balanceOf(address(this)) >= threshold, "es-module/threshold-not-met");
@@ -47,30 +55,28 @@ contract ESModule is DSAuth, DSNote {
         fired = true;
     }
 
-    function free() public auth note {
-        require(fired && !burnt);
+    function free() external auth note {
+        require(!burnt);
 
         freed = true;
     }
 
     // TODO: maybe burner
-    function burn() public auth note {
+    function burn() external auth note {
         require(fired && !freed);
-        require(gem.balanceOf(address(this)) >= threshold, "es-module/threshold-not-met");
 
         gem.transfer(0x0, gem.balanceOf(address(this)));
-
         burnt = true;
     }
 
-    function join(uint256 wad) public note {
+    function join(uint256 wad) external note {
         require(!fired);
 
         gems[msg.sender] = add(gems[msg.sender], wad);
         gem.transferFrom(msg.sender, address(this));
     }
 
-    function exit(address usr, uint256 wad) public note {
+    function exit(address usr, uint256 wad) external note {
         require(freed);
 
         gems[msg.sender] = sub(gems[msg.sender], wad);
