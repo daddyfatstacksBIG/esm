@@ -22,9 +22,9 @@ contract ESM is DSAuth, DSNote {
 
     mapping(address => uint256) public gems;
 
-    bool fired;
-    bool freed;
-    bool burnt;
+    bool public fired;
+    bool public freed;
+    bool public burnt;
 
     constructor(address gem_, address end_, address sun_, uint256 cap_, address owner_, address authority_) public {
         gem = GemLike(gem_);
@@ -58,7 +58,7 @@ contract ESM is DSAuth, DSNote {
     // -- esm actions --
     function fire() public note {
         require(!fired, "esm/already-fired");
-        require(gem.balanceOf(address(this)) >= cap, "esm/cap-not-met");
+        require(full(), "esm/cap-not-met");
 
         end.cage();
         fired = true;
@@ -71,7 +71,7 @@ contract ESM is DSAuth, DSNote {
     }
 
     function burn() external auth note {
-        require(fired && !freed, "esm/too-early-to-burn");
+        require(!freed, "esm/already-freed");
 
         burnt = true;
         bool ok = gem.transfer(address(sun), gem.balanceOf(address(this)));
@@ -80,6 +80,7 @@ contract ESM is DSAuth, DSNote {
     }
 
     // -- user actions --
+    // TODO: should it stop accepting funds once full?
     function join(uint256 wad) external note {
         require(!fired);
 
@@ -96,5 +97,10 @@ contract ESM is DSAuth, DSNote {
         bool ok = gem.transfer(usr, wad);
 
         require(ok, "esm/failed-transfer");
+    }
+
+    // -- helpers --
+    function full() public returns (bool) {
+        return gem.balanceOf(address(this)) >= cap;
     }
 }
