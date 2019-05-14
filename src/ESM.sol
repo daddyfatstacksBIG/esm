@@ -82,7 +82,7 @@ contract ESM is DSAuth, DSNote {
     // -- user actions --
     // TODO: should it stop accepting funds once full?
     function join(uint256 wad) external note {
-        require(!fired);
+        require(!fired, "esm/already-fired");
 
         gems[msg.sender] = add(gems[msg.sender], wad);
         bool ok = gem.transferFrom(msg.sender, address(this), wad);
