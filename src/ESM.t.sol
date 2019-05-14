@@ -11,9 +11,15 @@ contract EndTest is EndLike{
 
 contract TestUsr {
     ESM esm;
+    DSToken gem;
+
+    constructor(DSToken gem_) public {
+        gem = gem_;
+    }
 
     function setESM(ESM esm_) external {
         esm = esm_;
+        gem.approve(address(esm), 1000);
     }
 
     function callCap(uint256 val) external {
@@ -31,21 +37,29 @@ contract TestUsr {
     function callBurn() external {
         esm.burn();
     }
+
+    function callJoin(uint256 wad) external {
+        esm.join(wad);
+    }
+
+    function callExit(address who, uint256 wad) external {
+        esm.exit(who, wad);
+    }
 }
 
 contract ESMTest is DSTest {
-    ESM esm;
-    GemLike gem;
+    ESM     esm;
+    DSToken gem;
     EndLike end;
     uint256 cap;
     address sun;
     TestUsr usr;
 
     function setUp() public {
-        gem = GemLike(address(new DSToken("GOLD")));
+        gem = new DSToken("GOLD");
         end = EndLike(address(new EndTest()));
         sun = address(0x0);
-        usr = new TestUsr();
+        usr = new TestUsr(gem);
 
         esm = new ESM(address(gem), address(end), sun, 10, address(usr), msg.sender);
         usr.setESM(esm);
@@ -87,6 +101,17 @@ contract ESMTest is DSTest {
         usr.callBurn();
 
         assertTrue(esm.burnt());
+    }
+
+    function test_burn_balance() public {
+        gem.mint(address(usr), 10);
+
+        usr.callJoin(5);
+
+        usr.callBurn();
+
+        assertEq(gem.balanceOf(address(esm)), 0);
+        assertEq(gem.balanceOf(address(sun)), 5);
     }
 
     function testFail_fire_twice() public {
@@ -143,5 +168,49 @@ contract ESMTest is DSTest {
 
     // -- user actions --
     function test_join() public {
+        gem.mint(address(usr), 10);
+
+        usr.callJoin(10);
+
+        assertEq(gem.balanceOf(address(esm)), 10);
+        assertEq(gem.balanceOf(address(usr)), 0);
+    }
+
+    function test_exit() public {
+        gem.mint(address(usr), 10);
+
+        usr.callJoin(10);
+        usr.callFree();
+
+        usr.callExit(address(usr), 10);
+
+        assertEq(gem.balanceOf(address(esm)), 0);
+        assertEq(gem.balanceOf(address(usr)), 10);
+    }
+
+    function test_exit_gift() public {
+        gem.mint(address(usr), 10);
+
+        usr.callJoin(10);
+        usr.callFree();
+
+        assertEq(gem.balanceOf(address(0x0)), 0);
+        usr.callExit(address(0xdeadbeef), 10);
+
+        assertEq(gem.balanceOf(address(esm)), 0);
+        assertEq(gem.balanceOf(address(0xdeadbeef)), 10);
+    }
+
+    // -- helpers --
+    function test_full() public {
+        usr.callCap(10);
+
+        gem.mint(address(usr), 10);
+
+        usr.callJoin(5);
+        assertTrue(!esm.full());
+
+        usr.callJoin(5);
+        assertTrue(esm.full());
     }
 }
