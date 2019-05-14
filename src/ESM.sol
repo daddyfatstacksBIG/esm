@@ -4,7 +4,7 @@ import "ds-auth/auth.sol";
 import "ds-note/note.sol";
 
 contract GemLike {
-    function balanceOf(address) public returns (uint256);
+    function balanceOf(address) public view returns (uint256);
     function transfer(address, uint256) public returns (bool);
     function transferFrom(address, address, uint256) public returns (bool);
 }
@@ -100,7 +100,7 @@ contract ESM is DSAuth, DSNote {
     }
 
     // -- helpers --
-    function full() public returns (bool) {
+    function full() public view returns (bool) {
         return gem.balanceOf(address(this)) >= cap;
     }
 }
