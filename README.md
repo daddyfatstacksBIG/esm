@@ -6,13 +6,13 @@ Emergency Shutdown Module
 
 * `fire` can be triggered by anyone
 * `fire` can be triggered iff the ESM's balance is >= the threshold
-* Governance actions can only be performed through a Pause
-* `free` and `burn` can only be called via governance
+* `fire` can only be called once
+* `free` and `burn` can only be triggered via governance
 * `free` and `burn` are mutually exclusive, and the first one to be triggered
   takes precedence
 * `join` can be called iff `fire` has not been triggered
 * `exit` can be called iff `free` has been triggered
-* `fire` can only be called once
+* `join` can be called after the threshold has been reached
 
 ## Moving to a new ESM
 
@@ -22,4 +22,4 @@ Emergency Shutdown Module
 
 ## Pointing the ESM to a new End
 
-* Governance calls `aim`
+* Governance calls `file("aim", 0xdeadbeef)`
