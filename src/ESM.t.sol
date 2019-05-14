@@ -11,14 +11,12 @@ contract EndTest is EndLike{
 
 contract TestUsr {
     ESM esm;
-    DSToken gem;
-
-    constructor(DSToken gem_) public {
-        gem = gem_;
-    }
 
     function setESM(ESM esm_) external {
         esm = esm_;
+    }
+
+    function callApprove(DSToken gem) public {
         gem.approve(address(esm), 1000);
     }
 
@@ -54,15 +52,19 @@ contract ESMTest is DSTest {
     uint256 cap;
     address sun;
     TestUsr usr;
+    TestUsr gov;
 
     function setUp() public {
         gem = new DSToken("GOLD");
         end = EndLike(address(new EndTest()));
         sun = address(0x0);
-        usr = new TestUsr(gem);
+        usr = new TestUsr();
+        gov = new TestUsr();
+        esm = new ESM(address(gem), address(end), sun, 10, address(gov), msg.sender);
 
-        esm = new ESM(address(gem), address(end), sun, 10, address(usr), msg.sender);
+        gov.setESM(esm);
         usr.setESM(esm);
+        usr.callApprove(gem);
     }
 
     function test_constructor() public {
@@ -70,35 +72,35 @@ contract ESMTest is DSTest {
         assertEq(address(esm.end()), address(end));
         assertEq(esm.sun(), address(0x0));
         assertEq(esm.cap(), 10);
-        assertEq(address(esm.owner()), address(usr));
+        assertEq(address(esm.owner()), address(gov));
         assertEq(address(esm.authority()), address(msg.sender));
     }
 
     function test_fired() public {
         assertTrue(!esm.fired());
-        usr.callCap(0);
+        gov.callCap(0);
 
-        usr.callFire();
+        gov.callFire();
 
         assertTrue(esm.fired());
     }
 
     function test_freed() public {
         assertTrue(!esm.freed());
-        usr.callCap(0);
-        usr.callFire();
+        gov.callCap(0);
+        gov.callFire();
 
-        usr.callFree();
+        gov.callFree();
 
         assertTrue(esm.freed());
     }
 
     function test_burnt() public {
         assertTrue(!esm.burnt());
-        usr.callCap(0);
-        usr.callFire();
+        gov.callCap(0);
+        gov.callFire();
 
-        usr.callBurn();
+        gov.callBurn();
 
         assertTrue(esm.burnt());
     }
@@ -108,62 +110,62 @@ contract ESMTest is DSTest {
 
         usr.callJoin(5);
 
-        usr.callBurn();
+        gov.callBurn();
 
         assertEq(gem.balanceOf(address(esm)), 0);
         assertEq(gem.balanceOf(address(sun)), 5);
     }
 
     function testFail_fire_twice() public {
-        usr.callCap(0);
-        usr.callFire();
+        gov.callCap(0);
+        gov.callFire();
 
-        usr.callFire();
+        gov.callFire();
     }
 
     function testFail_fire_cap_not_met() public {
         assertTrue(!esm.full());
 
-        usr.callFire();
+        gov.callFire();
     }
 
     function testFail_free_already_burnt() public {
-        usr.callBurn();
+        gov.callBurn();
 
-        usr.callFree();
+        gov.callFree();
     }
 
     // TOOD also test failed transfers
     function testFail_burn_already_freed() public {
-        usr.callFree();
+        gov.callFree();
 
-        usr.callBurn();
+        gov.callBurn();
     }
 
     function test_free_before_fire() public {
         assertTrue(!esm.fired());
 
-        usr.callFree();
+        gov.callFree();
     }
 
     function test_free_after_fire() public {
-        usr.callCap(0);
-        usr.callFire();
+        gov.callCap(0);
+        gov.callFire();
 
-        usr.callFree();
+        gov.callFree();
     }
 
     function test_burn_before_fire() public {
         assertTrue(!esm.fired());
 
-        usr.callBurn();
+        gov.callBurn();
     }
 
     function test_burn_after_fire() public {
-        usr.callCap(0);
-        usr.callFire();
+        gov.callCap(0);
+        gov.callFire();
 
-        usr.callBurn();
+        gov.callBurn();
     }
 
     // -- user actions --
@@ -180,7 +182,7 @@ contract ESMTest is DSTest {
         gem.mint(address(usr), 10);
 
         usr.callJoin(10);
-        usr.callFree();
+        gov.callFree();
 
         usr.callExit(address(usr), 10);
 
@@ -192,7 +194,7 @@ contract ESMTest is DSTest {
         gem.mint(address(usr), 10);
 
         usr.callJoin(10);
-        usr.callFree();
+        gov.callFree();
 
         assertEq(gem.balanceOf(address(0x0)), 0);
         usr.callExit(address(0xdeadbeef), 10);
@@ -203,7 +205,7 @@ contract ESMTest is DSTest {
 
     // -- helpers --
     function test_full() public {
-        usr.callCap(10);
+        gov.callCap(10);
 
         gem.mint(address(usr), 10);
 
