@@ -5,8 +5,11 @@ import "ds-token/token.sol";
 
 import "./ESM.sol";
 
-contract EndTest is EndLike{
-    function cage() public {}
+contract EndTest is EndLike {
+    uint256 public live;
+
+    constructor()   public { live = 1; }
+    function cage() public { live = 0; }
 }
 
 contract TestUsr {
@@ -16,13 +19,19 @@ contract TestUsr {
         esm = esm_;
     }
 
-    function callApprove(DSToken gem) public {
-        gem.approve(address(esm), 1000);
+    // TODO use delegatecall?
+    function callApprove(DSToken gem) external {
+        gem.approve(address(esm), uint256(-1));
     }
 
-    function callCap(uint256 val) external {
-        esm.file("cap", val);
+    function callFile(bytes32 job, address val) external {
+        esm.file(job, val);
     }
+
+    function callFile(bytes32 job, uint256 val) external {
+        esm.file(job, val);
+    }
+
 
     function callFire() external {
         esm.fire();
@@ -48,7 +57,7 @@ contract TestUsr {
 contract ESMTest is DSTest {
     ESM     esm;
     DSToken gem;
-    EndLike end;
+    EndTest end;
     uint256 cap;
     address sun;
     TestUsr usr;
@@ -56,8 +65,8 @@ contract ESMTest is DSTest {
 
     function setUp() public {
         gem = new DSToken("GOLD");
-        end = EndLike(address(new EndTest()));
-        sun = address(0x0);
+        end = new EndTest();
+        sun = address(0x1);
         usr = new TestUsr();
         gov = new TestUsr();
         esm = new ESM(address(gem), address(end), sun, 10, address(gov), msg.sender);
@@ -70,15 +79,27 @@ contract ESMTest is DSTest {
     function test_constructor() public {
         assertEq(address(esm.gem()), address(gem));
         assertEq(address(esm.end()), address(end));
-        assertEq(esm.sun(), address(0x0));
+        assertEq(esm.sun(), address(0x1));
         assertEq(esm.cap(), 10);
         assertEq(address(esm.owner()), address(gov));
         assertEq(address(esm.authority()), address(msg.sender));
     }
 
+    // -- admin --
+    function test_file() public {
+        gov.callFile("end", address(0x42));
+        assertEq(address(esm.end()), address(0x42));
+
+        gov.callFile("sun", address(0x42));
+        assertEq(address(esm.sun()), address(0x42));
+
+        gov.callFile("cap", 42);
+        assertEq(esm.cap(), 42);
+    }
+
     function test_fired() public {
         assertTrue(!esm.fired());
-        gov.callCap(0);
+        gov.callFile("cap", 0);
 
         gov.callFire();
 
@@ -87,7 +108,7 @@ contract ESMTest is DSTest {
 
     function test_freed() public {
         assertTrue(!esm.freed());
-        gov.callCap(0);
+        gov.callFile("cap", 0);
         gov.callFire();
 
         gov.callFree();
@@ -97,12 +118,20 @@ contract ESMTest is DSTest {
 
     function test_burnt() public {
         assertTrue(!esm.burnt());
-        gov.callCap(0);
+        gov.callFile("cap", 0);
         gov.callFire();
 
         gov.callBurn();
 
         assertTrue(esm.burnt());
+    }
+
+    function test_fire() public {
+        // TODO rename to setCap
+        gov.callFile("cap", 0);
+        gov.callFire();
+
+        assertEq(end.live(), 0);
     }
 
     function test_burn_balance() public {
@@ -117,7 +146,7 @@ contract ESMTest is DSTest {
     }
 
     function testFail_fire_twice() public {
-        gov.callCap(0);
+        gov.callFile("cap", 0);
         gov.callFire();
 
         gov.callFire();
@@ -135,7 +164,6 @@ contract ESMTest is DSTest {
         gov.callFree();
     }
 
-    // TOOD also test failed transfers
     function testFail_burn_already_freed() public {
         gov.callFree();
 
@@ -149,7 +177,7 @@ contract ESMTest is DSTest {
     }
 
     function test_free_after_fire() public {
-        gov.callCap(0);
+        gov.callFile("cap", 0);
         gov.callFire();
 
         gov.callFree();
@@ -162,7 +190,7 @@ contract ESMTest is DSTest {
     }
 
     function test_burn_after_fire() public {
-        gov.callCap(0);
+        gov.callFile("cap", 0);
         gov.callFire();
 
         gov.callBurn();
@@ -203,9 +231,22 @@ contract ESMTest is DSTest {
         assertEq(gem.balanceOf(address(0xdeadbeef)), 10);
     }
 
+    function testFail_join_insufficient_balance() public {
+        assertEq(gem.balanceOf(address(usr)), 0);
+
+        usr.callJoin(10);
+    }
+
+    function testFail_exit_insufficient_balance() public {
+        gov.callFree();
+        assertEq(gem.balanceOf(address(usr)), 0);
+
+        usr.callExit(address(usr), 10);
+    }
+
     // -- helpers --
     function test_full() public {
-        gov.callCap(10);
+        gov.callFile("cap", 10);
 
         gem.mint(address(usr), 10);
 
