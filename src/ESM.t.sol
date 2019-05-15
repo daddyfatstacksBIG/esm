@@ -48,9 +48,6 @@ contract TestUsr {
         esm.burn();
     }
 
-    function callHeal() external {
-        esm.heal();
-    }
     function callJoin(uint256 wad) external {
         esm.join(wad);
     }
@@ -163,6 +160,11 @@ contract ESMTest is DSTest {
         gov.callFire();
     }
 
+    function test_burnt_to_burnt() public {
+        gov.callBurn();
+        gov.callBurn();
+    }
+
     function test_fired_to_freed() public {
         gov.callFile("cap", 0);
         gov.callFire();
@@ -257,6 +259,7 @@ contract ESMTest is DSTest {
 
         usr.callJoin(10);
 
+        assertEq(esm.sum(), 10);
         assertEq(gem.balanceOf(address(esm)), 10);
         assertEq(gem.balanceOf(address(usr)), 0);
     }
@@ -277,6 +280,7 @@ contract ESMTest is DSTest {
 
         usr.callExit(address(usr), 10);
 
+        assertEq(esm.sum(), 0);
         assertEq(gem.balanceOf(address(esm)), 0);
         assertEq(gem.balanceOf(address(usr)), 10);
     }
@@ -318,6 +322,14 @@ contract ESMTest is DSTest {
 
         usr.callJoin(5);
         assertTrue(esm.full());
+    }
+
+    function test_full_keeps_internal_balance() public {
+        gov.callFile("cap", 10);
+        gem.mint(address(esm), 10);
+
+        assertEq(esm.sum(), 0);
+        assertTrue(!esm.full());
     }
 
     // -- internal test helpers --

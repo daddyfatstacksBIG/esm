@@ -17,6 +17,7 @@ contract ESM is DSAuth, DSNote {
     uint256 public cap;
     GemLike public gem;
     EndLike public end;
+    uint256 public sum;
     address public sun;
 
     mapping(address => uint256) public gems;
@@ -25,6 +26,7 @@ contract ESM is DSAuth, DSNote {
     uint256 public constant BASIC = 0;
     uint256 public constant FREED = 1;
     uint256 public constant BURNT = 2;
+    uint256 public constant FIRED = 3;
 
     bool public done;
 
@@ -78,16 +80,12 @@ contract ESM is DSAuth, DSNote {
 
     function burn() external auth note {
         bool ok = gem.transfer(address(sun), gem.balanceOf(address(this)));
+        sum = 0;
 
         require(ok, "esm/failed-transfer");
 
+        done  = true;
         state = BURNT;
-    }
-
-    function heal() external auth note {
-        require(state == BURNT, "esm/not-burnt");
-
-        state = BASIC;
     }
 
     // -- user actions --
@@ -95,6 +93,8 @@ contract ESM is DSAuth, DSNote {
         require(state == BASIC && !done, "esm/not-joinable");
 
         gems[msg.sender] = add(gems[msg.sender], wad);
+        sum = add(sum, wad);
+
         bool ok = gem.transferFrom(msg.sender, address(this), wad);
 
         require(ok, "esm/failed-transfer");
@@ -104,14 +104,15 @@ contract ESM is DSAuth, DSNote {
         require(state == FREED, "esm/not-freed");
 
         gems[msg.sender] = sub(gems[msg.sender], wad);
+        sum = sub(sum, wad);
+
         bool ok = gem.transfer(usr, wad);
 
         require(ok, "esm/failed-transfer");
     }
 
     // -- helpers --
-    // TODO should we keep independent count of balance?
     function full() public view returns (bool) {
-        return gem.balanceOf(address(this)) >= cap;
+        return sum >= cap;
     }
 }

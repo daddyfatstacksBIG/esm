@@ -8,9 +8,11 @@ Emergency Shutdown Module
 * `fire` can be triggered iff the ESM's balance is >= the `cap`
 * `fire` can only be called once
 * state transition functions are `auth`ed
-* `join` can be called only in the `BASIC` state
+* `done` means either `FIRED` or `BURNT`
+* `join` can be called only in the `BASIC` state and iff `!done`
 * `join` can be called even after the `cap` has been reached
 * `exit` can be called only in the `FREED` state
+* once `burn` is called, no further state change is possible
 
 ## Allowed state transitions
 
@@ -20,12 +22,11 @@ Emergency Shutdown Module
   * fired
 * freed
   * basic
+  * freed
   * burnt
   * fired
 * burnt
-  * basic
-  * freed
-  * fired
+  * burnt
 * fired
   * freed
   * burnt
