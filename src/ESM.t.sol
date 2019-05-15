@@ -19,7 +19,6 @@ contract TestUsr {
         esm = esm_;
     }
 
-    // TODO use delegatecall?
     function callApprove(DSToken gem) external {
         gem.approve(address(esm), uint256(-1));
     }
@@ -97,6 +96,7 @@ contract ESMTest is DSTest {
         assertEq(esm.cap(), 42);
     }
 
+    // -- state transitions --
     function test_fired() public {
         assertTrue(!esm.fired());
         gov.callFile("cap", 0);
@@ -124,25 +124,6 @@ contract ESMTest is DSTest {
         gov.callBurn();
 
         assertTrue(esm.burnt());
-    }
-
-    function test_fire() public {
-        // TODO rename to setCap
-        gov.callFile("cap", 0);
-        gov.callFire();
-
-        assertEq(end.live(), 0);
-    }
-
-    function test_burn_balance() public {
-        gem.mint(address(usr), 10);
-
-        usr.callJoin(5);
-
-        gov.callBurn();
-
-        assertEq(gem.balanceOf(address(esm)), 0);
-        assertEq(gem.balanceOf(address(sun)), 5);
     }
 
     function testFail_fire_twice() public {
@@ -196,6 +177,25 @@ contract ESMTest is DSTest {
         gov.callBurn();
     }
 
+    // -- side effects --
+    function test_fire() public {
+        gov.callFile("cap", 0);
+        gov.callFire();
+
+        assertEq(end.live(), 0);
+    }
+
+    function test_burn_balance() public {
+        gem.mint(address(usr), 10);
+
+        usr.callJoin(5);
+
+        gov.callBurn();
+
+        assertEq(gem.balanceOf(address(esm)), 0);
+        assertEq(gem.balanceOf(address(sun)), 5);
+    }
+
     // -- user actions --
     function test_join() public {
         gem.mint(address(usr), 10);
@@ -204,6 +204,14 @@ contract ESMTest is DSTest {
 
         assertEq(gem.balanceOf(address(esm)), 10);
         assertEq(gem.balanceOf(address(usr)), 0);
+    }
+
+    function test_join_over_cap() public {
+        gem.mint(address(usr), 20);
+        gov.callFile("cap", 10);
+
+        usr.callJoin(10);
+        usr.callJoin(10);
     }
 
     function test_exit() public {
