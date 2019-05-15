@@ -40,10 +40,17 @@ contract TestUsr {
         esm.free();
     }
 
+    function callLock() external {
+        esm.lock();
+    }
+
     function callBurn() external {
         esm.burn();
     }
 
+    function callHeal() external {
+        esm.heal();
+    }
     function callJoin(uint256 wad) external {
         esm.join(wad);
     }
@@ -97,40 +104,114 @@ contract ESMTest is DSTest {
     }
 
     // -- state transitions --
-    function test_fired() public {
-        assertTrue(!esm.fired());
+    function test_initial_state() public {
+        assertStateEq(esm.BASIC());
+    }
+
+    function test_basic_to_freed() public {
+        assertStateEq(esm.BASIC());
+        gov.callFree();
+    }
+
+    function test_basic_to_burnt() public {
+        assertStateEq(esm.BASIC());
+        gov.callBurn();
+    }
+
+    function test_basic_to_fired() public {
+        assertStateEq(esm.BASIC());
+        gov.callFile("cap", 0);
+        gov.callFire();
+    }
+
+    function test_freed_to_basic() public {
+        gov.callFree();
+        gov.callLock();
+    }
+
+    function test_freed_to_burnt() public {
+        gov.callFree();
+        gov.callBurn();
+    }
+
+    function test_freed_to_fired() public {
+        gov.callFile("cap", 0);
+        gov.callFree();
+        gov.callFire();
+    }
+
+    function test_freed_to_freed() public {
+        gov.callFile("cap", 0);
+        gov.callFree();
+        gov.callFree();
+    }
+
+    function test_burnt_to_basic() public {
+        gov.callBurn();
+        gov.callHeal();
+    }
+
+    function test_burnt_to_freed() public {
+        gov.callBurn();
+        gov.callFree();
+    }
+
+    function test_burnt_to_fired() public {
+        gov.callBurn();
         gov.callFile("cap", 0);
 
         gov.callFire();
-
-        assertTrue(esm.fired());
     }
 
+    function test_fired_to_freed() public {
+        gov.callFile("cap", 0);
+        gov.callFire();
+
+        gov.callFree();
+    }
+
+    function test_fired_to_burnt() public {
+        gov.callFile("cap", 0);
+        gov.callFire();
+
+        gov.callBurn();
+    }
+
+    function testFail_fired_to_fired() public {
+        gov.callFile("cap", 0);
+        gov.callFire();
+
+        gov.callFire();
+    }
+
+    // -- state enum assignments --
     function test_freed() public {
-        assertTrue(!esm.freed());
+        assertStateNEq(esm.FREED());
         gov.callFile("cap", 0);
         gov.callFire();
 
         gov.callFree();
 
-        assertTrue(esm.freed());
+        assertStateEq(esm.FREED());
     }
 
     function test_burnt() public {
-        assertTrue(!esm.burnt());
+        assertStateNEq(esm.BURNT());
         gov.callFile("cap", 0);
         gov.callFire();
 
         gov.callBurn();
 
-        assertTrue(esm.burnt());
+        assertStateEq(esm.BURNT());
     }
 
-    function testFail_fire_twice() public {
+    function test_fired() public {
+        assertTrue(!esm.done());
         gov.callFile("cap", 0);
-        gov.callFire();
 
         gov.callFire();
+
+        assertTrue(esm.done());
     }
 
     function testFail_fire_cap_not_met() public {
@@ -139,42 +220,16 @@ contract ESMTest is DSTest {
         gov.callFire();
     }
 
-    function testFail_free_already_burnt() public {
-        gov.callBurn();
+    function testFail_lock_when_not_freed() public {
+        assertStateNEq(esm.FREED());
 
-        gov.callFree();
+        gov.callLock();
     }
 
-    function testFail_burn_already_freed() public {
-        gov.callFree();
+    function testFail_heal_when_not_burnt() public {
+        assertStateNEq(esm.BURNT());
 
-        gov.callBurn();
-    }
-
-    function test_free_before_fire() public {
-        assertTrue(!esm.fired());
-
-        gov.callFree();
-    }
-
-    function test_free_after_fire() public {
-        gov.callFile("cap", 0);
-        gov.callFire();
-
-        gov.callFree();
-    }
-
-    function test_burn_before_fire() public {
-        assertTrue(!esm.fired());
-
-        gov.callBurn();
-    }
-
-    function test_burn_after_fire() public {
-        gov.callFile("cap", 0);
-        gov.callFire();
-
-        gov.callBurn();
+        gov.callHeal();
     }
 
     // -- side effects --
@@ -263,5 +318,14 @@ contract ESMTest is DSTest {
 
         usr.callJoin(5);
         assertTrue(esm.full());
+    }
+
+    // -- internal test helpers --
+    function assertStateEq(uint256 state) internal {
+        esm.state() == state;
+    }
+
+    function assertStateNEq(uint256 state) internal {
+        esm.state() != state;
     }
 }

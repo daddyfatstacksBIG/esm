@@ -21,9 +21,12 @@ contract ESM is DSAuth, DSNote {
 
     mapping(address => uint256) public gems;
 
-    bool public fired;
-    bool public freed;
-    bool public burnt;
+    uint256 public state;
+    uint256 public constant BASIC = 0;
+    uint256 public constant FREED = 1;
+    uint256 public constant BURNT = 2;
+
+    bool public done;
 
     constructor(address gem_, address end_, address sun_, uint256 cap_, address owner_, address authority_) public {
         gem = GemLike(gem_);
@@ -35,11 +38,11 @@ contract ESM is DSAuth, DSNote {
     }
 
     // -- math --
-    function add(uint x, uint y) internal pure returns (uint z) {
+    function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x + y;
         require(z >= x);
     }
-    function sub(uint x, uint y) internal pure returns (uint z) {
+    function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x - y;
         require(z <= x);
     }
@@ -56,31 +59,40 @@ contract ESM is DSAuth, DSNote {
 
     // -- esm actions --
     function fire() external note {
-        require(!fired, "esm/already-fired");
-        require(full(), "esm/cap-not-met");
+        require(!done && full(), "esm/not-fireable");
 
         end.cage();
-        fired = true;
+
+        done = true;
     }
 
     function free() external auth note {
-        require(!burnt, "esm/already-burnt");
+        state = FREED;
+    }
 
-        freed = true;
+    function lock() external auth note {
+        require(state == FREED, "esm/not-freed");
+
+        state = BASIC;
     }
 
     function burn() external auth note {
-        require(!freed, "esm/already-freed");
-
-        burnt = true;
         bool ok = gem.transfer(address(sun), gem.balanceOf(address(this)));
 
         require(ok, "esm/failed-transfer");
+
+        state = BURNT;
+    }
+
+    function heal() external auth note {
+        require(state == BURNT, "esm/not-burnt");
+
+        state = BASIC;
     }
 
     // -- user actions --
     function join(uint256 wad) external note {
-        require(!fired, "esm/already-fired");
+        require(state == BASIC && !done, "esm/not-joinable");
 
         gems[msg.sender] = add(gems[msg.sender], wad);
         bool ok = gem.transferFrom(msg.sender, address(this), wad);
@@ -89,7 +101,7 @@ contract ESM is DSAuth, DSNote {
     }
 
     function exit(address usr, uint256 wad) external note {
-        require(freed, "esm/not-freed");
+        require(state == FREED, "esm/not-freed");
 
         gems[msg.sender] = sub(gems[msg.sender], wad);
         bool ok = gem.transfer(usr, wad);
@@ -98,6 +110,7 @@ contract ESM is DSAuth, DSNote {
     }
 
     // -- helpers --
+    // TODO should we keep independent count of balance?
     function full() public view returns (bool) {
         return gem.balanceOf(address(this)) >= cap;
     }
