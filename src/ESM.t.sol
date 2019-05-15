@@ -143,23 +143,6 @@ contract ESMTest is DSTest {
         gov.callFree();
     }
 
-    function test_burnt_to_basic() public {
-        gov.callBurn();
-        gov.callHeal();
-    }
-
-    function test_burnt_to_freed() public {
-        gov.callBurn();
-        gov.callFree();
-    }
-
-    function test_burnt_to_fired() public {
-        gov.callBurn();
-        gov.callFile("cap", 0);
-
-        gov.callFire();
-    }
-
     function test_burnt_to_burnt() public {
         gov.callBurn();
         gov.callBurn();
@@ -208,12 +191,12 @@ contract ESMTest is DSTest {
     }
 
     function test_fired() public {
-        assertTrue(!esm.done());
+        assertTrue(!esm.spent());
         gov.callFile("cap", 0);
 
         gov.callFire();
 
-        assertTrue(esm.done());
+        assertTrue(esm.spent());
     }
 
     function testFail_fire_cap_not_met() public {
@@ -226,12 +209,6 @@ contract ESMTest is DSTest {
         assertStateNEq(esm.FREED());
 
         gov.callLock();
-    }
-
-    function testFail_heal_when_not_burnt() public {
-        assertStateNEq(esm.BURNT());
-
-        gov.callHeal();
     }
 
     // -- side effects --

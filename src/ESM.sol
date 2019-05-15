@@ -15,7 +15,6 @@ contract EndLike {
 
 contract ESM is DSAuth, DSNote {
     uint256 public cap;
-    uint256 public sum;
     GemLike public gem;
     EndLike public end;
     uint256 public sum;
@@ -23,13 +22,13 @@ contract ESM is DSAuth, DSNote {
 
     mapping(address => uint256) public gems;
 
-    uint256 public state;
     uint256 public constant BASIC = 0;
     uint256 public constant FREED = 1;
     uint256 public constant BURNT = 2;
     uint256 public constant FIRED = 3;
+    uint256 public          state = BASIC;
+    bool    public          spent;
 
-    bool public done;
 
     constructor(address gem_, address end_, address sun_, uint256 cap_, address owner_, address authority_) public {
         gem = GemLike(gem_);
@@ -51,9 +50,9 @@ contract ESM is DSAuth, DSNote {
     }
 
     // -- admin --
-    function file(bytes32 job, address val) external auth note {
-        if (job == "end") end = EndLike(val);
-        if (job == "sun") sun = val;
+    function file(bytes32 job, address obj) external auth note {
+        if (job == "end") end = EndLike(obj);
+        if (job == "sun") sun = obj;
     }
 
     function file(bytes32 job, uint256 val) external auth note {
@@ -62,11 +61,12 @@ contract ESM is DSAuth, DSNote {
 
     // -- esm actions --
     function fire() external note {
-        require(!done && full(), "esm/not-fireable");
+        require(!spent && full(), "esm/not-fireable");
 
         end.cage();
 
-        done = true;
+        spent = true;
+        state = FIRED;
     }
 
     function free() external auth note {
@@ -85,13 +85,13 @@ contract ESM is DSAuth, DSNote {
 
         require(ok, "esm/failed-transfer");
 
-        done  = true;
+        spent = true;
         state = BURNT;
     }
 
     // -- user actions --
     function join(uint256 wad) external note {
-        require(state == BASIC && !done, "esm/not-joinable");
+        require(state == BASIC && !spent, "esm/not-joinable");
 
         gems[msg.sender] = add(gems[msg.sender], wad);
         sum = add(sum, wad);
