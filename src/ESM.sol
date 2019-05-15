@@ -10,7 +10,6 @@ contract GemLike {
 }
 
 contract EndLike {
-    // TODO: does it need the auth modifier?
     function cage() public;
 }
 
@@ -56,7 +55,7 @@ contract ESM is DSAuth, DSNote {
     }
 
     // -- esm actions --
-    function fire() public note {
+    function fire() external note {
         require(!fired, "esm/already-fired");
         require(full(), "esm/cap-not-met");
 
@@ -80,7 +79,6 @@ contract ESM is DSAuth, DSNote {
     }
 
     // -- user actions --
-    // TODO: should it stop accepting funds once full?
     function join(uint256 wad) external note {
         require(!fired, "esm/already-fired");
 
