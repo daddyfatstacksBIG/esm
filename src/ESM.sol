@@ -15,6 +15,7 @@ contract EndLike {
 
 contract ESM is DSAuth, DSNote {
     uint256 public cap;
+    uint256 public sum;
     GemLike public gem;
     EndLike public end;
     uint256 public sum;
