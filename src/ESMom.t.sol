@@ -60,6 +60,7 @@ contract ESMomTest is DSTest {
         assertEq(post, address(mom.esm()));
         assertEq(end.wards(address(prev)), 0);
         assertEq(end.wards(address(post)), 1);
+        assertEq(end.wards(address(mom)),  1);
     }
 
     function test_free_non_live() public {
@@ -70,6 +71,7 @@ contract ESMomTest is DSTest {
         assertTrue(address(prev) == post);
         assertTrue(prev.state()  == prev.FREED());
         assertEq(end.wards(address(prev)), 0);
+        assertEq(end.wards(address(mom)),  0);
     }
 
     function test_burn() public {
@@ -81,6 +83,7 @@ contract ESMomTest is DSTest {
         assertEq(post, address(mom.esm()));
         assertEq(end.wards(address(prev)), 0);
         assertEq(end.wards(address(post)), 1);
+        assertEq(end.wards(address(mom)),  1);
     }
 
     function test_burn_non_live() public {
@@ -91,6 +94,7 @@ contract ESMomTest is DSTest {
         assertTrue(address(prev) == post);
         assertTrue(prev.state()  == prev.BURNT());
         assertEq(end.wards(address(prev)), 0);
+        assertEq(end.wards(address(mom)),  0);
     }
 
     function testFail_unauthorized_free() public {

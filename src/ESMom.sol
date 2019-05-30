@@ -46,7 +46,7 @@ contract ESMom is DSNote {
     function free() external auth note returns (address) {
         esm.free();
 
-        if (end.live() == 1) { replace(); }
+        replace();
 
         return address(esm);
     }
@@ -54,7 +54,7 @@ contract ESMom is DSNote {
     function burn() external auth note returns (address) {
         esm.burn();
 
-        if (end.live() == 1) { replace(); }
+        replace();
 
         return address(esm);
     }
@@ -63,8 +63,11 @@ contract ESMom is DSNote {
     function replace() internal {
         end.deny(address(esm));
 
-        esm = new ESM(address(this), gem, address(end), sun, cap);
-
-        end.rely(address(esm));
+        if (end.live() == 1) {
+            esm = new ESM(address(this), gem, address(end), sun, cap);
+            end.rely(address(esm));
+        } else {
+            end.deny(address(this));
+        }
     }
 }
