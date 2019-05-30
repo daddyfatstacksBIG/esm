@@ -7,6 +7,7 @@ import "ds-note/note.sol";
 contract EndLike {
     function rely(address) public;
     function deny(address) public;
+    function live() public returns (uint256);
 }
 
 contract ESMom is DSNote {
@@ -45,7 +46,7 @@ contract ESMom is DSNote {
     function free() external auth note returns (address) {
         esm.free();
 
-        replace();
+        if (end.live() == 1) { replace(); }
 
         return address(esm);
     }
@@ -53,7 +54,7 @@ contract ESMom is DSNote {
     function burn() external auth note returns (address) {
         esm.burn();
 
-        replace();
+        if (end.live() == 1) { replace(); }
 
         return address(esm);
     }
