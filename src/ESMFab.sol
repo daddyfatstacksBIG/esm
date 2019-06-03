@@ -20,16 +20,17 @@ contract ESMFab is DSNote {
     mapping(address => uint256) public wards;
     function rely(address usr) public auth note { wards[usr] = 1; }
     function deny(address usr) public auth note { wards[usr] = 0; }
-    modifier auth() { require(wards[msg.sender] == 1, "esfab/unauthorized"); _; }
+    modifier auth() { require(wards[msg.sender] == 1, "esmfab/unauthorized"); _; }
 
-    constructor(address ward, address gem_, address end_, address sun_, uint256 cap_) public {
-        wards[ward] = 1;
+    constructor(address gem_, address end_, address sun_, uint256 cap_) public {
+        wards[msg.sender] = 1;
+
         gem = gem_;
         end = EndLike(end_);
         sun = sun_;
         cap = cap_;
 
-        esm = new ESM(address(this), gem_, end_, sun_, cap_);
+        esm = new ESM(msg.sender, gem_, end_, sun_, cap_);
     }
 
     // -- admin --
@@ -47,7 +48,7 @@ contract ESMFab is DSNote {
         end.deny(address(esm));
 
         if (end.live() == 1) {
-            esm = new ESM(address(this), gem, address(end), sun, cap);
+            esm = new ESM(msg.sender, gem, address(end), sun, cap);
             end.rely(address(esm));
         } else {
             end.deny(address(this));

@@ -32,8 +32,8 @@ contract ESM is DSNote {
     function deny(address usr) public auth note { wards[usr] = 0; }
     modifier auth() { require(wards[msg.sender] == 1, "esm/unauthorized"); _; }
 
-    constructor(address ward, address gem_, address end_, address sun_, uint256 cap_) public {
-        wards[ward] = 1;
+    constructor(address gem_, address end_, address sun_, uint256 cap_) public {
+        wards[msg.sender] = 1;
 
         gem = GemLike(gem_);
         end = EndLike(end_);
