@@ -1,7 +1,7 @@
 pragma solidity ^0.5.6;
 
 import {ESM} from "./ESM.sol";
-import {ESMom} from "./ESMom.sol";
+import {ESMFab} from "./ESMFab.sol";
 
 import {DSToken} from "ds-token/token.sol";
 
@@ -16,8 +16,8 @@ contract EndTest {
     function deny(address usr) public { wards[usr] = 0; }
 }
 
-contract ESMomTest is DSTest {
-    ESMom   mom;
+contract ESMFabTest is DSTest {
+    ESMFab   mom;
     DSToken gem;
     EndTest end;
     address sun;
@@ -27,7 +27,7 @@ contract ESMomTest is DSTest {
         end = new EndTest();
         sun = address(0x1);
 
-        mom = new ESMom(address(this), address(gem), address(end), address(sun), 10);
+        mom = new ESMFab(address(this), address(gem), address(end), address(sun), 10);
         end.rely(address(mom));
     }
 
@@ -51,17 +51,17 @@ contract ESMomTest is DSTest {
     }
 
     function testFail_unauthorized_file_end() public {
-        mom = new ESMom(address(0x0), address(gem), address(end), address(sun), 10);
+        mom = new ESMFab(address(0x0), address(gem), address(end), address(sun), 10);
         mom.file("end", address(0x42));
     }
 
     function testFail_unauthorized_file_sun() public {
-        mom = new ESMom(address(0x0), address(gem), address(end), address(sun), 10);
+        mom = new ESMFab(address(0x0), address(gem), address(end), address(sun), 10);
         mom.file("sun", address(0x42));
     }
 
     function testFail_unauthorized_file_cap() public {
-        mom = new ESMom(address(0x0), address(gem), address(end), address(sun), 10);
+        mom = new ESMFab(address(0x0), address(gem), address(end), address(sun), 10);
         mom.file("cap", 0x42);
     }
 
@@ -113,13 +113,13 @@ contract ESMomTest is DSTest {
     }
 
     function testFail_unauthorized_free() public {
-        ESMom mum = new ESMom(address(0x0), address(gem), address(end), address(sun), 10);
+        ESMFab mum = new ESMFab(address(0x0), address(gem), address(end), address(sun), 10);
 
         mum.free();
     }
 
     function testFail_unauthorized_burn() public {
-        ESMom mum = new ESMom(address(0x0), address(gem), address(end), address(sun), 10);
+        ESMFab mum = new ESMFab(address(0x0), address(gem), address(end), address(sun), 10);
 
         mum.burn();
     }

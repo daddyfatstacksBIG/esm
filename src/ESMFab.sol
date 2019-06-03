@@ -10,7 +10,7 @@ contract EndLike {
     function live() public returns (uint256);
 }
 
-contract ESMom is DSNote {
+contract ESMFab is DSNote {
     ESM     public esm;
     address public gem;
     EndLike public end;
@@ -20,7 +20,7 @@ contract ESMom is DSNote {
     mapping(address => uint256) public wards;
     function rely(address usr) public auth note { wards[usr] = 1; }
     function deny(address usr) public auth note { wards[usr] = 0; }
-    modifier auth() { require(wards[msg.sender] == 1, "esmom/unauthorized"); _; }
+    modifier auth() { require(wards[msg.sender] == 1, "esfab/unauthorized"); _; }
 
     constructor(address ward, address gem_, address end_, address sun_, uint256 cap_) public {
         wards[ward] = 1;
@@ -43,24 +43,7 @@ contract ESMom is DSNote {
     }
 
     // -- actions --
-    function free() external auth note returns (address) {
-        esm.free();
-
-        replace();
-
-        return address(esm);
-    }
-
-    function burn() external auth note returns (address) {
-        esm.burn();
-
-        replace();
-
-        return address(esm);
-    }
-
-    // -- helpers --
-    function replace() internal {
+    function replace() external auth note {
         end.deny(address(esm));
 
         if (end.live() == 1) {
